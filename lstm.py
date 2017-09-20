@@ -31,7 +31,9 @@ def load_data(filename, seq_len, normalise_window):
         result.append(data[index: index+sequence_length])
 
     if normalise_window:
-        result = normalise_window(result)
+        result = normalise_windows(result)
+    
+    result = np.array(result)
     
     row = round(0.9 * result.shape[0])
     train = result[:int(row), :]
@@ -46,7 +48,7 @@ def load_data(filename, seq_len, normalise_window):
 
     return [x_train, y_train, x_test, y_test]
 
-def normalise_window(windows_data):
+def normalise_windows(windows_data):
     normalised_data = []
     for window in windows_data:
         normalised_window = [((float(p) / float(window[0])) - 1) for p in window ]
