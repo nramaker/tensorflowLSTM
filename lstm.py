@@ -55,3 +55,50 @@ def normalise_window(windows_data):
 
 def build_model(layers):
     model = Sequential()
+
+    model.add(LSTM(
+        input_dim=layers[0],
+        outpu_dim=layers[1],
+        return_sequence=True
+    ))
+    model.add(Dropout(0.2))
+
+    model.add(LSTM(
+        layers[2],
+        return_sequence=False
+    ))
+    model.add(Activation("linear"))
+
+    start = time.time()
+    model.compile(loss="mse", optimizer="rmsprop")
+    print "Compilation Time : ", time.time() - start
+    return model
+
+def predict_point_by_point(model, data):
+    #Predict each timestep given the last sequence of the data, in effect only predicting 1 step ahead each time
+    predicted = model.predict(data)
+    predicted = np.reshape(predicted, (predicted.size,))
+    return predicted
+
+def predict_sequence_full(model, data, window_size):
+    #shift the window by 1 new prediction each time, rerun predictions on new window
+    curr_frame=data[0]
+    predicted = []
+    for i in xrange(len(data)):
+        predicted.append(model.predict(curr_frame[newaxis,:,:])[0,0])
+        curr_frame = curr_frame[1:]
+        curr_frame = np.insert(curr_frame, [window_size-1], predicted[-1], axis=0)
+    return predicted
+
+def predict_sequences_multiple(model, data, window_size, prediction_len):
+    #Predict sequence of 50 steps before shifting prediction run forward by 50 steps
+    prediction_seq = []
+    for i in xrange(len(data)/prediction_len):
+        curr_frame = data[i*prediction_len]
+        predicted = []
+        for j in xrange(prediction_len):
+            predicted.append(model.predict(curr_frame[newaxis,:,:])[0,0])
+            curr_frame = curr_frame[1:]
+            curr_frame = np.insert(curr_frame, [window_size-1], predicted[-1], axis=0)
+        prediction_seq.append(predicted)
+        return prediction_seq
